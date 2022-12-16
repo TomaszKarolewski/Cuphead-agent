@@ -8,6 +8,12 @@ listOfFiles = list()
 
 
 for (dirpath, dirnames, filenames) in os.walk(dirName):
+    for f in dirnames:
+        r = f.replace(" ", "_")
+        if r != f:
+            os.rename(os.path.join(dirpath, f), os.path.join(dirpath, r))
+
+for (dirpath, dirnames, filenames) in os.walk(dirName):
     listOfFiles += [os.path.join(dirpath, file) for file in filenames]
 
 
