@@ -13,11 +13,14 @@ The creator of the class I was based on is https://learncodebygaming.com/blog/fa
 
 class WindowCapture:
     # constructor
-    def __init__(self, window_name):
+    def __init__(self, window_name=None):
         # find the handle for the window we want to capture
-        self.hwnd = win32gui.FindWindow(None, window_name)
-        if not self.hwnd:
-            raise Exception('Window not found: {}'.format(window_name))
+        if window_name is None:
+            self.hwnd = win32gui.GetDesktopWindow()
+        else:
+            self.hwnd = win32gui.FindWindow(None, window_name)
+            if not self.hwnd:
+                raise Exception('Window not found: {}'.format(window_name))
 
         # get the window size
         user32 = ctypes.windll.user32
@@ -81,15 +84,15 @@ class WindowCapture:
 
 
 if __name__ == '__main__':
-    wincap = WindowCapture('DSCH_TRAIN_dataset.7z (wersja testowa)')
+    wincap = WindowCapture()
     loop_time = time()
     while True:
         # get an updated image of the game
         screenshot = wincap.get_screenshot()
 
         # debug the loop rate
-        cv.putText(img=screenshot, text='FPS {:.0f}'.format(1 / (time() - loop_time)),
-                   org=(100, 100),
+        cv.putText(img=screenshot, text='FPS: {:.0f}'.format(1 / (time() - loop_time)),
+                   org=(0, 30),
                    fontFace=cv.FONT_HERSHEY_SIMPLEX,
                    fontScale=1,
                    color=(0, 0, 0),
