@@ -38,10 +38,13 @@ class WindowCapture:
         self.cropped_x = border_pixels
         self.cropped_y = titlebar_pixels
 
-        # set the cropped coordinates offset so we can translate screenshot
+        # set the cropped coordinates offset, so we can translate screenshot
         # images into actual screen positions
         self.offset_x = window_rect[0] + self.cropped_x
         self.offset_y = window_rect[1] + self.cropped_y
+
+    def __del__(self):
+        print('Destructor called')
 
     def get_screenshot(self):
         # get the window image data
@@ -59,7 +62,7 @@ class WindowCapture:
         #     dataBitMap.SaveBitmapFile(cDC, 'debug.bmp')
         #     flag = 0
         signedIntsArray = dataBitMap.GetBitmapBits(True)
-        img = np.fromstring(signedIntsArray, dtype='uint8')
+        img = np.frombuffer(signedIntsArray, dtype='uint8')
         img.shape = (self.h, self.w, 4)
 
         # free resources
@@ -84,7 +87,7 @@ class WindowCapture:
 
 
 if __name__ == '__main__':
-    wincap = WindowCapture()
+    wincap = WindowCapture('DSCH_TRAIN_dataset.7z (wersja testowa)')
     loop_time = time()
     while True:
         # get an updated image of the game
