@@ -74,19 +74,19 @@ class SampleGenerator():
         return image
     
 
-    def paste_image(self, background_img: cv2.typing.MatLike, object_img: cv2.typing.MatLike, tl_x: int, tl_y: int) -> cv2.typing.MatLike:
+    def paste_image(self, background_img: cv2.typing.MatLike, object_img: cv2.typing.MatLike, x_tl: int, y_tl: int) -> cv2.typing.MatLike:
         """Pasting object on background method that cuts exceeding pixels from object.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
             object_img (cv2.typing.MatLike): object image to paste.
-            tl_x (int): top left x coordinate to place object.
-            tl_y (int): top left y coordinate to place object.
+            x_tl (int): top left x coordinate to place object.
+            y_tl (int): top left y coordinate to place object.
 
         Raises:
             Exception: object is bigger than background image.
-            Exception: used tl_x exceeds boundaries of the background.
-            Exception: used tl_y exceeds boundaries of the background.
+            Exception: used x_tl exceeds boundaries of the background.
+            Exception: used y_tl exceeds boundaries of the background.
 
         Returns:
             cv2.typing.MatLike: background with pasted object.
@@ -97,38 +97,38 @@ class SampleGenerator():
         if h_obj > h_bg or w_obj > w_bg:
             raise Exception(f"The object exceeds the dimensions of the background. h_obj <= h_bg ({h_obj} <= {h_bg}), w_obj <= w_bg ({w_obj} <= {w_bg})")
         
-        if tl_x > w_bg or tl_x + w_obj < 0:
-            raise Exception(f"The object exceeds the boundaries of the background. tl_x <= w_bg ({tl_x} <= {w_bg}), tl_x + w_obj >= 0 ({tl_x + w_obj} >= 0)") 
+        if x_tl > w_bg or x_tl + w_obj < 0:
+            raise Exception(f"The object exceeds the boundaries of the background. x_tl <= w_bg ({x_tl} <= {w_bg}), x_tl + w_obj >= 0 ({x_tl + w_obj} >= 0)") 
         
-        if tl_y > h_bg or tl_y + h_obj < 0:
-            raise Exception(f"The object exceeds the boundaries of the background. tl_y <= h_bg ({tl_y} <= {h_bg}), tl_y + h_obj >= 0 ({tl_y + h_obj} >= 0)") 
+        if y_tl > h_bg or y_tl + h_obj < 0:
+            raise Exception(f"The object exceeds the boundaries of the background. y_tl <= h_bg ({y_tl} <= {h_bg}), y_tl + h_obj >= 0 ({y_tl + h_obj} >= 0)") 
 
-        if tl_x < 0: 
-            object_img = object_img[:, -tl_x:, :]
+        if x_tl < 0: 
+            object_img = object_img[:, -x_tl:, :]
             h_obj, w_obj = object_img.shape[:2]
-            tl_x = 0
-        elif tl_x + w_obj > w_bg:
-            diff = tl_x + w_obj - w_bg
+            x_tl = 0
+        elif x_tl + w_obj > w_bg:
+            diff = x_tl + w_obj - w_bg
             object_img = object_img[:, :w_obj - diff, :]
 
-        if tl_y < 0: 
-            object_img = object_img[-tl_y:, :, :]
+        if y_tl < 0: 
+            object_img = object_img[-y_tl:, :, :]
             h_obj, w_obj = object_img.shape[:2]
-            tl_y = 0
-        elif tl_y + h_obj > h_bg:
-            diff = tl_y + h_obj - h_bg
+            y_tl = 0
+        elif y_tl + h_obj > h_bg:
+            diff = y_tl + h_obj - h_bg
             object_img = object_img[:h_obj - diff, :, :]
 
         alpha = object_img[:, :, 3] / 255.0
         alpha = alpha[:, :, np.newaxis]
 
-        background_img[tl_y:tl_y+h_obj, tl_x:tl_x+w_obj] = (
-            (1 - alpha) * background_img[tl_y:tl_y+h_obj, tl_x:tl_x+w_obj] + alpha * object_img[:, :, :]
+        background_img[y_tl:y_tl+h_obj, x_tl:x_tl+w_obj] = (
+            (1 - alpha) * background_img[y_tl:y_tl+h_obj, x_tl:x_tl+w_obj] + alpha * object_img[:, :, :]
         ).astype(np.uint8)
 
         return background_img
     
-    def prepare_coords(self, name: str, coords: Tuple) -> dict:
+    def prepare_coords(self, name: str, coords: Tuple) -> list:
         """Preparing object summary and correct exceeding coordinates.
 
         Args:
@@ -138,17 +138,44 @@ class SampleGenerator():
         Returns:
             dict: object name and bounding box.
         """
-        x, y, w_obj, h_obj = coords
-
-        x = max(0, min(x, 640))
-        y = max(0, min(y, 360))
-        w_obj = max(0, min(w_obj, 640))
-        h_obj = max(0, min(h_obj, 360))
-            
-        object = {
-            "label": name,
-            "bbox": [x, y, w_obj, h_obj]
+        object_to_id_dict: dict = {
+            "Cuphead": 0,
+            "Platform": 1,
+            "Enemy Idle": 2,
+            "Enemy FS": 3,
+            "Enemy Create": 4,
+            "Enemy Final_Idle": 5,
+            "Enemy FP": 6,
+            "Object Chomper": 7,
+            "Object Mini Flower": 8,
+            "Object Seed": 9,
+            "Object Venus Flytrap": 10,
+            "Object Vines": 11,
+            "Object Acorn": 12,
+            "Object Boomerang": 13,
+            "Object Pollen": 14,
+            "Object Vines Final": 15,
+            "Object Vines Final Platform": 16
         }
+
+        x_tl, y_tl, w_obj, h_obj = coords
+
+        x_tl = max(0, min(x_tl, 640))
+        y_tl = max(0, min(y_tl, 360))
+
+        if x_tl + w_obj > 640:
+            w_obj_tmp = 640 - x_tl
+            x_center: int = x_tl + w_obj_tmp//2
+        else:
+            x_center: int = x_tl + w_obj//2
+
+        if y_tl + h_obj > 360:
+            h_obj_tmp = 360 - y_tl
+            y_center: int = y_tl + h_obj_tmp//2
+        else:
+            y_center: int = y_tl + h_obj//2
+                 
+        object = [object_to_id_dict[name], x_center, y_center, w_obj, h_obj]
 
         return object
 
@@ -162,16 +189,16 @@ class SampleGenerator():
             Tuple[cv2.typing.MatLike, list]: background image with platforms, and platforms coordinates.
         """
         objects_coords: list = list()
-        for (x, y) in [(40, 170), (170, 160), (305, 175)]:
+        for (x_tl, y_tl) in [(40, 170), (170, 160), (305, 175)]:
             random_sprint_dir: str = random.choice(self.platform_sprints)
             object_img = self.read_image(random_sprint_dir, "platform")
             h_obj, w_obj = object_img.shape[:2]
 
-            y += random.randint(-5, 5)
+            y_tl += random.randint(-5, 5)
 
-            background_img = self.paste_image(background_img, object_img, x, y)
+            background_img = self.paste_image(background_img, object_img, x_tl, y_tl)
 
-            object = self.prepare_coords("Platform", (x, y, w_obj, h_obj))
+            object = self.prepare_coords("Platform", (x_tl, y_tl, w_obj, h_obj))
             objects_coords.append(object)
 
         return background_img, objects_coords
@@ -192,10 +219,10 @@ class SampleGenerator():
         object_img = self.read_image(random_sprint_dir, "enemy")
         h_obj, w_obj = object_img.shape[:2]
 
-        x: int = 650 - w_obj
-        y: int = 350 - h_obj
+        x_tl: int = 650 - w_obj
+        y_tl: int = 350 - h_obj
 
-        background_img = self.paste_image(background_img, object_img, x, y)
+        background_img = self.paste_image(background_img, object_img, x_tl, y_tl)
         enemy_phase = enemy_phase[:-7]
 
         if enemy_phase not in ["FS", "Create", "Final_Idle", "FP"]:
@@ -203,20 +230,20 @@ class SampleGenerator():
         else:
             enemy_phase_simplified = enemy_phase
 
-        object = self.prepare_coords(f"Enemy {enemy_phase_simplified}", (x, y, w_obj, h_obj))
+        object = self.prepare_coords(f"Enemy {enemy_phase_simplified}", (x_tl, y_tl, w_obj, h_obj))
         objects_coords.append(object)
 
         return background_img, objects_coords, enemy_phase
 
 
-    def place_object(self, background_img: cv2.typing.MatLike, object_name: str, x_range: Tuple, y_range: Tuple, objects_number: int = 1, use_obj_height: bool = False, use_obj_width: bool = False) -> Tuple[cv2.typing.MatLike, list]:
+    def place_object(self, background_img: cv2.typing.MatLike, object_name: str, x_tl_range: Tuple, y_tl_range: Tuple, objects_number: int = 1, use_obj_height: bool = False, use_obj_width: bool = False) -> Tuple[cv2.typing.MatLike, list]:
         """Generating enemy attacks and missiles to the sample.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
             object_name (str): missiles name
-            x_range (Tuple): range of possible occurrence x coordinate.
-            y_range (Tuple): range of possible occurrence y coordinate.
+            x_tl_range (Tuple): range of possible occurrence x_tl coordinate.
+            y_tl_range (Tuple): range of possible occurrence y_tl coordinate.
             objects_number (int, optional): number of objects to generate. Defaults to 1.
             use_obj_height (bool, optional): flag to use bottom y coordinate instead of top. Defaults to False.
             use_obj_width (bool, optional): flag to use right x coordinate instead of left. Defaults to False.
@@ -230,17 +257,17 @@ class SampleGenerator():
             object_img = self.read_image(random_sprint_dir, "object")
             h_obj, w_obj = object_img.shape[:2]
 
-            x: int = random.randint(*x_range)
-            y: int = random.randint(*y_range)
+            x_tl: int = random.randint(*x_tl_range)
+            y_tl: int = random.randint(*y_tl_range)
 
             if use_obj_height:
-                y -= h_obj
+                y_tl -= h_obj
             if use_obj_width:
-                x -= w_obj
+                x_tl -= w_obj
 
-            background_img = self.paste_image(background_img, object_img, x, y)
+            background_img = self.paste_image(background_img, object_img, x_tl, y_tl)
 
-            object = self.prepare_coords(object_name, (x, y, w_obj, h_obj))
+            object = self.prepare_coords(object_name, (x_tl, y_tl, w_obj, h_obj))
             objects_coords.append(object)
 
         return background_img, objects_coords
@@ -261,12 +288,12 @@ class SampleGenerator():
         object_img = self.read_image(random_sprint_dir, "cuphead", flip)
         h_obj, w_obj = object_img.shape[:2]
 
-        x: int = random.randint(0, 430)
-        y: int = random.randint(0, 240)
+        x_tl: int = random.randint(0, 430)
+        y_tl: int = random.randint(0, 240)
 
-        background_img = self.paste_image(background_img, object_img, x, y)
+        background_img = self.paste_image(background_img, object_img, x_tl, y_tl)
 
-        object = self.prepare_coords("Cuphead", (x, y, w_obj, h_obj))
+        object = self.prepare_coords("Cuphead", (x_tl, y_tl, w_obj, h_obj))
         objects_coords.append(object)
 
         return background_img, objects_coords
@@ -336,11 +363,11 @@ class SampleGenerator():
         return background_img, objects_coords_list
 
 
-    def create_train_set(self, amount) -> None:
+    def create_train_set(self, amount: int) -> None:
         """Generating samples and save them.
 
         Args:
-            amount (_type_): amount of samples to create.
+            amount (int): amount of samples to create.
         """
         background_img = self.read_image(self.battleground_dir, "battleground")
         output_coords: list = list()
@@ -361,4 +388,4 @@ class SampleGenerator():
 
 if __name__ == "__main__":
     sg = SampleGenerator()
-    sg.create_train_set(10000)
+    sg.create_train_set(12000)
