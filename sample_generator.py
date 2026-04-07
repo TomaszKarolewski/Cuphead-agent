@@ -252,7 +252,7 @@ class SampleGenerator():
             Tuple[cv2.typing.MatLike, list]: background image with objects, and objects coordinates.
         """
         objects_coords: list = list()
-        for i in range(objects_number):
+        for _ in range(objects_number):
             random_sprint_dir: str = random.choice(self.objects_sprints[object_name])
             object_img = self.read_image(random_sprint_dir, "object")
             h_obj, w_obj = object_img.shape[:2]
