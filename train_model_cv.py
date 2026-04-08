@@ -31,7 +31,7 @@ class AnchorsGenerator():
         return np.array(bbox_list)
 
     
-    def iou_distances(self, bbox_list: np.typing.ArrayLike, centroid: np.typing.ArrayLike) -> np.typing.ArrayLike:
+    def iou_distances(self, bbox_list: np.typing.ArrayLike, centroid_list: np.typing.ArrayLike) -> np.typing.ArrayLike:
         """Calculates intersection over union with bounding boxes.
 
         Args:
@@ -43,17 +43,18 @@ class AnchorsGenerator():
         """
         w_box: np.typing.ArrayLike = bbox_list[:,0]
         h_box: np.typing.ArrayLike = bbox_list[:,1]
-        w_centroid: np.typing.ArrayLike = np.full(len(w_box), centroid[0])
-        h_centroid: np.typing.ArrayLike = np.full(len(h_box), centroid[1])
+        
+        w_centroid: np.typing.ArrayLike = np.tile(centroid_list[:,0], (len(w_box), 1))
+        h_centroid: np.typing.ArrayLike = np.tile(centroid_list[:,1], (len(h_box), 1))
 
-        w_intersection: np.typing.ArrayLike = np.minimum(w_box, w_centroid)
-        h_intersection: np.typing.ArrayLike = np.minimum(h_box, h_centroid)
+        w_intersection: np.typing.ArrayLike = np.minimum(w_box[:, np.newaxis], w_centroid)
+        h_intersection: np.typing.ArrayLike = np.minimum(h_box[:, np.newaxis], h_centroid)
 
         area_box: np.typing.ArrayLike = w_box * h_box
         area_centroid: np.typing.ArrayLike = w_centroid * h_centroid
         area_intersection: np.typing.ArrayLike = w_intersection * h_intersection
 
-        iou_array: np.typing.ArrayLike = area_intersection / (area_box + area_centroid - area_intersection)
+        iou_array: np.typing.ArrayLike = area_intersection / (area_box[:, np.newaxis] + area_centroid - area_intersection)
 
         return iou_array
 
@@ -77,20 +78,16 @@ class AnchorsGenerator():
         selected_values: float = 0
                  
         for _ in range(max_iter):
-            iou_list: list = []
-            for centroid in centroids:
-                iou: np.typing.ArrayLike = self.iou_distances(bbox_list, centroid)
-                iou_list.append(iou)
+            iou_list: np.typing.ArrayLike = self.iou_distances(bbox_list, centroids)
 
-            iou_array: np.typing.ArrayLike = np.stack(iou_list, axis=0)
-            new_cluster: np.typing.ArrayLike = np.argmax(iou_array, axis=0)
-            selected_values = np.mean(iou_array[new_cluster, np.arange(iou_array.shape[1])])
+            new_cluster: np.typing.ArrayLike = np.argmax(iou_list, axis=1)
+            selected_values = np.mean(iou_list[np.arange(iou_list.shape[0]), new_cluster])
 
             old_centroids: np.typing.ArrayLike = copy.deepcopy(centroids)
             centroids = []
             for k in range(n_clusters):
-                tmp: np.typing.ArrayLike = bbox_list[np.where(new_cluster == k)]
-                centroids.append([np.mean(tmp[:,0]), np.mean(tmp[:,1])])
+                grouped_bbox_list: np.typing.ArrayLike = bbox_list[np.where(new_cluster == k)]
+                centroids.append([np.mean(grouped_bbox_list[:,0]), np.mean(grouped_bbox_list[:,1])])
             centroids = np.stack(centroids, axis=0)
 
             delta_centroids: np.typing.ArrayLike = np.abs(old_centroids - centroids)
