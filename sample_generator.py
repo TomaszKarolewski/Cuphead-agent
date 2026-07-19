@@ -11,7 +11,7 @@ import cv2
 
 class SampleGenerator():
 
-    def __init__(self) -> None:
+    def __init__(self, input_shape: Tuple=(360, 640, 3)) -> None:
 
         self.scale_dict: dict = {
             "battleground": 1,
@@ -19,7 +19,8 @@ class SampleGenerator():
             "enemy": 0.5,
             "cuphead": 0.54
         }
-
+        
+        self.input_shape: Tuple = input_shape
         self.project_dir: str = os.path.dirname(os.path.abspath(__file__))
 
         self.training_set_dir: str = os.path.join(self.project_dir, "Training set")
@@ -48,7 +49,7 @@ class SampleGenerator():
         
 
     def read_image(self, img_dir: str, scale_key: str, horizontal_flip=False) -> cv2.typing.MatLike:
-        """Reading image method with rescaling and fliping objects.
+        """ Reading image method with rescaling and fliping objects.
 
         Args:
             img_dir (str): image directory.
@@ -75,7 +76,7 @@ class SampleGenerator():
     
 
     def paste_image(self, background_img: cv2.typing.MatLike, object_img: cv2.typing.MatLike, x_tl: int, y_tl: int) -> cv2.typing.MatLike:
-        """Pasting object on background method that cuts exceeding pixels from object.
+        """ Pasting object on background method that cuts exceeding pixels from object.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -129,7 +130,7 @@ class SampleGenerator():
         return background_img
     
     def prepare_coords(self, name: str, coords: Tuple) -> list:
-        """Preparing object summary and correct exceeding coordinates.
+        """ Preparing object summary and correct exceeding coordinates.
 
         Args:
             name (str): object name.
@@ -160,17 +161,17 @@ class SampleGenerator():
 
         x_tl, y_tl, w_obj, h_obj = coords
 
-        x_tl = max(0, min(x_tl, 640))
-        y_tl = max(0, min(y_tl, 360))
+        x_tl = max(0, min(x_tl, self.input_shape[1]-1))
+        y_tl = max(0, min(y_tl, self.input_shape[0]-1))
 
-        if x_tl + w_obj > 640:
-            w_obj_tmp = 640 - x_tl
+        if x_tl + w_obj > self.input_shape[1]-1:
+            w_obj_tmp = self.input_shape[1]-1 - x_tl
             x_center: int = x_tl + w_obj_tmp//2
         else:
             x_center: int = x_tl + w_obj//2
 
-        if y_tl + h_obj > 360:
-            h_obj_tmp = 360 - y_tl
+        if y_tl + h_obj > self.input_shape[0]-1:
+            h_obj_tmp = self.input_shape[0]-1 - y_tl
             y_center: int = y_tl + h_obj_tmp//2
         else:
             y_center: int = y_tl + h_obj//2
@@ -180,7 +181,7 @@ class SampleGenerator():
         return object
 
     def place_platforms(self, background_img: cv2.typing.MatLike) -> Tuple[cv2.typing.MatLike, list]:
-        """Generating platforms to the sample.
+        """ Generating platforms to the sample.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -205,7 +206,7 @@ class SampleGenerator():
     
 
     def place_enemy(self, background_img: cv2.typing.MatLike) -> Tuple[cv2.typing.MatLike, list, str]:
-        """Generating enemy to the sample.
+        """ Generating enemy to the sample.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -237,7 +238,7 @@ class SampleGenerator():
 
 
     def place_object(self, background_img: cv2.typing.MatLike, object_name: str, x_tl_range: Tuple, y_tl_range: Tuple, objects_number: int = 1, use_obj_height: bool = False, use_obj_width: bool = False) -> Tuple[cv2.typing.MatLike, list]:
-        """Generating enemy attacks and missiles to the sample.
+        """ Generating enemy attacks and missiles to the sample.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -274,7 +275,7 @@ class SampleGenerator():
 
 
     def place_cuphead(self, background_img: cv2.typing.MatLike) -> Tuple[cv2.typing.MatLike, list]:
-        """Generating hero to the sample.
+        """ Generating hero to the sample.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -300,7 +301,7 @@ class SampleGenerator():
 
 
     def place_objects_logic(self, background_img: cv2.typing.MatLike, enemy_phase: str) -> Tuple[cv2.typing.MatLike, list]:
-        """The logic of placing objects at the right moments in combat.
+        """ The logic of placing objects at the right moments in combat.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -344,7 +345,7 @@ class SampleGenerator():
     
 
     def generate_sample(self, background_img: cv2.typing.MatLike) -> Tuple[cv2.typing.MatLike, list]:
-        """Generating sample with all needed occurrences.
+        """ Generating sample with all needed occurrences.
 
         Args:
             background_img (cv2.typing.MatLike): background image.
@@ -364,7 +365,7 @@ class SampleGenerator():
 
 
     def create_train_set(self, amount: int) -> None:
-        """Generating samples and save them.
+        """ Generating samples and save them.
 
         Args:
             amount (int): amount of samples to create.

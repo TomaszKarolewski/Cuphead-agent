@@ -1,6 +1,8 @@
 test_env.ipynb
 Image source/
 Training set/
+Models/
+image_12000.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
