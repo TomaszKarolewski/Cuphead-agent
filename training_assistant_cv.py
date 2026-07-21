@@ -28,19 +28,19 @@ class YoloLoss(tf.keras.losses.Loss):
         Returns:
             tf.Tensor: combination of localization_loss, obj_loss and class_loss.
         """
-        true_box = y_true[:, 0:4]
-        pred_box = y_pred[:, 0:4]
+        true_box = y_true[:,:,:,:, 0:4]
+        pred_box = y_pred[:,:,:,:, 0:4]
         
-        true_obj = y_true[:, 4:5]
-        pred_obj = tf.sigmoid(y_pred[:, 4:5])
+        true_obj = y_true[:,:,:,:, 4:5]
+        pred_obj = tf.sigmoid(y_pred[:,:,:,:, 4:5])
         
-        true_class = y_true[:, 5:]
-        pred_class = tf.nn.softmax(y_pred[:, 5:], axis=-1)
+        true_class = y_true[:,:,:,:, 5:]
+        pred_class = tf.nn.softmax(y_pred[:,:,:,:, 5:], axis=-1)
 
         obj_mask = tf.cast(true_obj > 0, tf.float32)
 
-        xy_loss = obj_mask * tf.square(true_box[:, 0:2] - tf.sigmoid(pred_box[:, 0:2]))
-        wh_loss = obj_mask * tf.square(true_box[:, 2:4] - pred_box[:, 2:4])
+        xy_loss = obj_mask * tf.square(true_box[:,:,:,:, 0:2] - tf.sigmoid(pred_box[:,:,:,:, 0:2]))
+        wh_loss = obj_mask * tf.square(true_box[:,:,:,:, 2:4] - pred_box[:,:,:,:, 2:4])
         localization_loss = tf.reduce_sum(xy_loss + wh_loss)
 
         obj_loss = tf.keras.losses.binary_crossentropy(true_obj, pred_obj)
@@ -121,7 +121,7 @@ class TrainingAssistant():
             objects (np.ndarray): list of classed id and bounding boxes. 
 
         Returns:
-            np.ndarray: target tensor [0:2] -> grid coordinates, [2:4] -> scaling factors twth, [4] -> objectness, [5:] -> classes.
+            np.ndarray: target tensor [0:2] -> grid coordinates tytx, [2:4] -> scaling factors thtw, [4] -> objectness, [5:] -> classes.
         """
         objects_numpy: np.ndarray = objects.numpy()
         target_tensor: np.ndarray = np.zeros((*self.grid_size, len(self.anchors), 5 + self.num_classes), dtype=np.float32)
@@ -158,7 +158,7 @@ class TrainingAssistant():
 
         Args:
             img_paths (np.ndarray): image paths.
-            bbox_list (list): bounding box lists.
+            bbox_list (list): bounding box lists (object id, x_center, y_center, w_obj, h_obj).
             batch_size (int, optional): batch size. Defaults to 32.
 
         Returns:
@@ -222,7 +222,7 @@ class TrainingAssistant():
         return model
     
 
-    def train_model(self, val_split: float=0.2, save_model: bool=False, model_name: str = 'model_yolo') -> Model:
+    def train_model(self, val_split: float=0.2, epochs:int=50, save_model: bool=False, model_name: str = 'model_yolo') -> Model:
         """ Trains yolo neurla network with created train and validation set.
 
         Args:
@@ -262,13 +262,10 @@ class TrainingAssistant():
             if epoch < 2:
                 return lr 
             else:
-                return 0.0001
+                return 0.00001
         lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lr_schedule)
 
-        history = model.fit(dataset, epochs=50, validation_data=dataset_val, verbose=1, callbacks=[lr_scheduler, callback])
-
-        if save_model:
-            model.save(os.path.join(self.models_dir, f"{model_name}.keras"))
+        history = model.fit(dataset, epochs=epochs, validation_data=dataset_val, verbose=1, callbacks=[lr_scheduler, callback])
 
         plt.plot(history.history['loss'])
         plt.plot(history.history['val_loss'])
@@ -276,9 +273,17 @@ class TrainingAssistant():
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper right')
-        plt.savefig(os.path.join(self.models_dir, f"{model_name}.png"))
-        plt.show()
 
+        if save_model:
+            model.save(os.path.join(self.models_dir, f"{model_name}.keras"))
+
+            with open(os.path.join(self.models_dir, f"{model_name} anchors.pickle"), "wb") as output_file:
+                pickle.dump(self.anchors, output_file)
+            
+            plt.savefig(os.path.join(self.models_dir, f"{model_name}.png"))
+
+        plt.show()
+        
         return model
     
 

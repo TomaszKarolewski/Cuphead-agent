@@ -8,6 +8,8 @@ from typing import Optional, Tuple
 import pickle
 import numpy as np
 import cv2
+random.seed(42)
+
 
 class SampleGenerator():
 
@@ -18,6 +20,26 @@ class SampleGenerator():
             "platform": 0.52,
             "enemy": 0.5,
             "cuphead": 0.54
+        }
+
+        self.object_to_id_dict: dict = {
+            "Cuphead": 0,
+            "Platform": 1,
+            "Enemy Idle": 2,
+            "Enemy FS": 3,
+            "Enemy Create": 4,
+            "Enemy Final_Idle": 5,
+            "Enemy FP": 6,
+            "Object Chomper": 7,
+            "Object Mini Flower": 8,
+            "Object Seed": 9,
+            "Object Venus Flytrap": 10,
+            "Object Vines": 11,
+            "Object Acorn": 12,
+            "Object Boomerang": 13,
+            "Object Pollen": 14,
+            "Object Vines Final": 15,
+            "Object Vines Final Platform": 16
         }
         
         self.input_shape: Tuple = input_shape
@@ -137,28 +159,8 @@ class SampleGenerator():
             coords (Tuple): object bounding box.
 
         Returns:
-            dict: object name and bounding box.
+            dict: object id and bounding box (x_center, y_center, w_obj, h_obj).
         """
-        object_to_id_dict: dict = {
-            "Cuphead": 0,
-            "Platform": 1,
-            "Enemy Idle": 2,
-            "Enemy FS": 3,
-            "Enemy Create": 4,
-            "Enemy Final_Idle": 5,
-            "Enemy FP": 6,
-            "Object Chomper": 7,
-            "Object Mini Flower": 8,
-            "Object Seed": 9,
-            "Object Venus Flytrap": 10,
-            "Object Vines": 11,
-            "Object Acorn": 12,
-            "Object Boomerang": 13,
-            "Object Pollen": 14,
-            "Object Vines Final": 15,
-            "Object Vines Final Platform": 16
-        }
-
         x_tl, y_tl, w_obj, h_obj = coords
 
         x_tl = max(0, min(x_tl, self.input_shape[1]-1))
@@ -176,7 +178,7 @@ class SampleGenerator():
         else:
             y_center: int = y_tl + h_obj//2
                  
-        object = [object_to_id_dict[name], x_center, y_center, w_obj, h_obj]
+        object = [self.object_to_id_dict[name], x_center, y_center, w_obj, h_obj]
 
         return object
 

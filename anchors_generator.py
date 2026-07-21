@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 import tensorflow as tf
 from helpers import iou_distances
-
+random.seed(42)
 tf.keras.utils.set_random_seed(42)
 
 
@@ -50,13 +50,14 @@ class AnchorsGenerator():
         np.random.seed(42)
         idx: np.typing.ArrayLike = np.random.choice(len(unique_bbox_list), n_clusters, replace=False)
         centroids: np.ndarray = copy.deepcopy(unique_bbox_list[idx])
-        selected_values: np.floating = np.float64(0)
+        avg_iou: np.floating = np.float64(0)
                  
-        for _ in range(max_iter):
+        last_step:int = 0
+        for step in range(max_iter):
             iou_list: np.ndarray = iou_distances(bbox_list, centroids)
 
             new_cluster: np.ndarray = np.argmax(iou_list, axis=1)
-            selected_values = np.mean(iou_list[np.arange(iou_list.shape[0]), new_cluster])
+            avg_iou = np.mean(iou_list[np.arange(iou_list.shape[0]), new_cluster])
 
             old_centroids: np.typing.ArrayLike = copy.deepcopy(centroids)
             centroids_list: list = []
@@ -67,6 +68,7 @@ class AnchorsGenerator():
 
             delta_centroids: np.typing.ArrayLike = np.abs(old_centroids - centroids)
             if np.max(delta_centroids) < 0.01:
+                last_step = step
                 break
 
         area_array: np.typing.ArrayLike = np.prod(centroids, axis=1)
@@ -74,6 +76,7 @@ class AnchorsGenerator():
         centroids = centroids[area_idx]
 
         centroids = centroids.astype(int)
-        print(f"Avg IoU for all bounding boxes is {selected_values}")
+        print(f"Avg IoU for all bounding boxes is {avg_iou}, after {last_step} steps")
         
         return centroids
+    
